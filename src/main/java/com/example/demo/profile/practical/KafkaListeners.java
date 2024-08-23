@@ -19,7 +19,7 @@ public class KafkaListeners {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> filteredKafkaListenerContainerFactory(
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactoryForValue1(
             ConsumerFactory<String, String> consumerFactory) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -28,24 +28,37 @@ public class KafkaListeners {
             @Override
             public boolean filter(ConsumerRecord<String, String> consumerRecord) {
                 String headerValue = new String(consumerRecord.headers().lastHeader("headerKey").value());
-                return !"value1".equals(headerValue);
+                return !"value1".equals(headerValue); // Filter out if header value is not "value1"
             }
         });
         return factory;
     }
 
-    @KafkaListener(topics = "your-topic-name", groupId = "group1", containerFactory = "filteredKafkaListenerContainerFactory")
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactoryForValue2(
+            ConsumerFactory<String, String> consumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        factory.setRecordFilterStrategy(new RecordFilterStrategy<String, String>() {
+            @Override
+            public boolean filter(ConsumerRecord<String, String> consumerRecord) {
+                String headerValue = new String(consumerRecord.headers().lastHeader("headerKey").value());
+                return !"value2".equals(headerValue); // Filter out if header value is not "value2"
+            }
+        });
+        return factory;
+    }
+
+    @KafkaListener(topics = "your-topic-name", groupId = "group1", containerFactory = "kafkaListenerContainerFactoryForValue1")
     public void listener1(String message) {
         // Process messages with headerKey == "value1"
         System.out.println("Listener 1 received: " + message);
     }
 
-    @KafkaListener(topics = "your-topic-name", groupId = "group2", containerFactory = "kafkaListenerContainerFactory")
-    public void listener2(ConsumerRecord<String, String> record) {
-        String headerValue = new String(record.headers().lastHeader("headerKey").value());
-        if ("value2".equals(headerValue)) {
-            // Process messages with headerKey == "value2"
-            System.out.println("Listener 2 received: " + record.value());
-        }
+    @KafkaListener(topics = "your-topic-name", groupId = "group2", containerFactory = "kafkaListenerContainerFactoryForValue2")
+    public void listener2(String message) {
+        // Process messages with headerKey == "value2"
+        System.out.println("Listener 2 received: " + message);
     }
 }
