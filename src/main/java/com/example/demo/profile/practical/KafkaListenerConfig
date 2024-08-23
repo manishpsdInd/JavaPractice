@@ -1,0 +1,51 @@
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.listener.adapter.RecordFilterStrategy;
+
+@Configuration
+public class KafkaListenerConfig {
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
+            ConsumerFactory<String, String> consumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactoryForValue1(
+            ConsumerFactory<String, String> consumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        factory.setRecordFilterStrategy(new RecordFilterStrategy<String, String>() {
+            @Override
+            public boolean filter(ConsumerRecord<String, String> consumerRecord) {
+                String headerValue = new String(consumerRecord.headers().lastHeader("headerKey").value());
+                return !"value1".equals(headerValue); // Filter out if header value is not "value1"
+            }
+        });
+        return factory;
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactoryForValue2(
+            ConsumerFactory<String, String> consumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory);
+        factory.setRecordFilterStrategy(new RecordFilterStrategy<String, String>() {
+            @Override
+            public boolean filter(ConsumerRecord<String, String> consumerRecord) {
+                String headerValue = new String(consumerRecord.headers().lastHeader("headerKey").value());
+                return !"value2".equals(headerValue); // Filter out if header value is not "value2"
+            }
+        });
+        return factory;
+    }
+}
