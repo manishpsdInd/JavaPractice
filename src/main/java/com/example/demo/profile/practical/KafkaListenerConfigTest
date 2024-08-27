@@ -1,0 +1,61 @@
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.internals.RecordHeader;
+import org.apache.kafka.common.header.internals.RecordHeaders;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.listener.adapter.RecordFilterStrategy;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
+public class KafkaListenerConfigTest {
+
+    private KafkaListenerConfig config;
+    private ConsumerFactory<String, String> consumerFactory;
+
+    @BeforeEach
+    public void setUp() {
+        config = new KafkaListenerConfig();
+        consumerFactory = Mockito.mock(ConsumerFactory.class);
+    }
+
+    @Test
+    public void testRecordFilterStrategyForValue1() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                config.kafkaListenerContainerFactoryForValue1(consumerFactory);
+
+        RecordFilterStrategy<String, String> filterStrategy = factory.getRecordFilterStrategy();
+
+        // Case 1: Header is "value1" (should not be filtered out)
+        ConsumerRecord<String, String> recordWithHeaderValue1 = new ConsumerRecord<>("topic", 0, 0L, "key", "value");
+        recordWithHeaderValue1.headers().add(new RecordHeader("headerKey", "value1".getBytes()));
+        assertFalse(filterStrategy.filter(recordWithHeaderValue1));
+
+        // Case 2: Header is not "value1" (should be filtered out)
+        ConsumerRecord<String, String> recordWithHeaderValueNotValue1 = new ConsumerRecord<>("topic", 0, 0L, "key", "value");
+        recordWithHeaderValueNotValue1.headers().add(new RecordHeader("headerKey", "value2".getBytes()));
+        assertTrue(filterStrategy.filter(recordWithHeaderValueNotValue1));
+    }
+
+    @Test
+    public void testRecordFilterStrategyForValue2() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+                config.kafkaListenerContainerFactoryForValue2(consumerFactory);
+
+        RecordFilterStrategy<String, String> filterStrategy = factory.getRecordFilterStrategy();
+
+        // Case 1: Header is "value2" (should not be filtered out)
+        ConsumerRecord<String, String> recordWithHeaderValue2 = new ConsumerRecord<>("topic", 0, 0L, "key", "value");
+        recordWithHeaderValue2.headers().add(new RecordHeader("headerKey", "value2".getBytes()));
+        assertFalse(filterStrategy.filter(recordWithHeaderValue2));
+
+        // Case 2: Header is not "value2" (should be filtered out)
+        ConsumerRecord<String, String> recordWithHeaderValueNotValue2 = new ConsumerRecord<>("topic", 0, 0L, "key", "value");
+        recordWithHeaderValueNotValue2.headers().add(new RecordHeader("headerKey", "value1".getBytes()));
+        assertTrue(filterStrategy.filter(recordWithHeaderValueNotValue2));
+    }
+}
